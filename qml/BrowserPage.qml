@@ -248,7 +248,8 @@ Page {
 
     onStatusChanged: if (status == PageStatus.Active) refreshStar()
     Component.onCompleted: {
-        var start = web.text("last", "");
+        // an address from another app (FeedMee) wins over the last page
+        var start = startUrl != "" ? startUrl : web.text("last", "");
         web.load(start != "" ? start : homeUrl());
     }
 }

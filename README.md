@@ -19,7 +19,11 @@ control over what the old engine has to load, so the app stays responsive:
   68k.news and wiby.me start with it off);
 - reader mode through FrogFind for pages the old engine cannot show;
 - search from the address bar with DuckDuckGo Lite (default), FrogFind,
-  wiby.me or your own search address (`%s` marks where the words go).
+  wiby.me or your own search address (`%s` marks where the words go);
+- other apps can open a page in NetMee: `netmee-n9 http://...`, or over D-Bus
+  (`com.github.smyhu.netmee`, object `/`, method `openUrl(url)`).
+  [FeedMee](https://github.com/smyhu/feedmee-n9) uses this, so news on the
+  Events screen open in NetMee.
 
 Engine: the system QtWebKit (Qt 4.7). For HTTPS with TLS 1.2 install the
 [TLS 1.2 patch by WunderWungiel](https://wunderwungiel.pl/MeeGo/) first.
@@ -28,10 +32,10 @@ settings). Translations are welcome: see `qml/strings.js`.
 
 ## Install
 
-Copy `dist/netmee-n9_0.1.3_armel.deb` to the phone (for example to
+Copy `dist/netmee-n9_0.1.5_armel.deb` to the phone (for example to
 `/home/developer/`) and install it as root:
 
-    aegis-dpkg -i /home/developer/netmee-n9_0.1.3_armel.deb
+    aegis-dpkg -i /home/developer/netmee-n9_0.1.5_armel.deb
 
 `aegis-dpkg` comes from CODeRUS' Aegis-install hack (also inside N9 QTweak).
 Start NetMee from its icon.

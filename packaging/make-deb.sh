@@ -2,13 +2,14 @@
 # make-deb.sh - builds netmee-n9_<VER>_armel.deb from build/netmee-n9 + qml/ + packaging/
 set -e
 D=$(cd "$(dirname "$0")/.." && pwd)
-VER=${VER:-0.1.3}
+VER=${VER:-0.1.5}
 OUTDIR=${OUTDIR:-$D/dist}
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
-P=$T/data; mkdir -p $P/opt/netmee-n9/bin $P/opt/netmee-n9/qml $P/usr/share/applications $P/usr/share/icons/hicolor/80x80/apps $P/usr/share/doc/netmee-n9 $T/ctl
+P=$T/data; mkdir -p $P/opt/netmee-n9/bin $P/opt/netmee-n9/qml $P/usr/share/applications $P/usr/share/icons/hicolor/80x80/apps $P/usr/share/doc/netmee-n9 $P/usr/share/dbus-1/services $T/ctl
 install -m 755 $D/build/netmee-n9 $P/opt/netmee-n9/bin/
 install -m 644 $D/qml/* $P/opt/netmee-n9/qml/
 install -m 644 $D/packaging/netmee-n9.desktop $P/usr/share/applications/
+install -m 644 $D/packaging/com.github.smyhu.netmee.service $P/usr/share/dbus-1/services/
 install -m 644 $D/qml/netmee-n9.png $P/usr/share/icons/hicolor/80x80/apps/
 install -m 644 $D/blocklist.txt $P/opt/netmee-n9/
 install -m 644 $D/LICENSE $P/usr/share/doc/netmee-n9/copyright
@@ -19,7 +20,7 @@ Version: $VER
 Architecture: armel
 Maintainer: smyhu <smyhu@users.noreply.github.com>
 Installed-Size: $SIZE
-Depends: libc6 (>= 2.10), libqtcore4 (>= 4.7.4~), libqtgui4 (>= 4.7.4~), libqt4-declarative (>= 4.7.4~), libqtwebkit4, qt-components (>= 1.0)
+Depends: libc6 (>= 2.10), libqtcore4 (>= 4.7.4~), libqtgui4 (>= 4.7.4~), libqt4-dbus (>= 4.7.4~), libqt4-declarative (>= 4.7.4~), libqtwebkit4, qt-components (>= 1.0)
 Section: user/network
 Priority: optional
 Homepage: https://github.com/smyhu/netmee-n9

@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.github.smyhu.netmee
+Exec=/opt/netmee-n9/bin/netmee-n9
