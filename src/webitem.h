@@ -13,7 +13,9 @@
 #include <QtCore/QSet>
 #include <QtCore/QStringList>
 
-class QGraphicsWebView;
+#include <QtWebKit/QGraphicsWebView>
+#include <QtCore/QTimer>
+#include <QtCore/QPointF>
 
 // Answers a blocked request at once with an error and no data.
 class BlockedReply : public QNetworkReply
@@ -76,6 +78,38 @@ protected:
     QWebPage *createWindow(WebWindowType);
 };
 
+// Touch handling: a finger on the page scrolls (the Flickable takes the drag),
+// a short tap is a click, and only a press held still for holdMs starts
+// WebKit's own text selection.
+class TouchWebView : public QGraphicsWebView
+{
+    Q_OBJECT
+public:
+    TouchWebView(QGraphicsItem *parent = 0);
+    bool selecting() const { return m_selecting; }
+    int holdMs;
+signals:
+    void selectingChanged();
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *e);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *e);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *e);
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *e);
+    void ungrabMouseEvent(QEvent *e);
+private slots:
+    void onHold();
+private:
+    void sendPress();
+    void setSelecting(bool b);
+    QTimer m_hold;
+    bool m_pending;
+    bool m_selecting;
+    QPointF m_pos, m_scenePos;
+    QPoint m_screenPos;
+    Qt::MouseButton m_button;
+    Qt::KeyboardModifiers m_mods;
+};
+
 class WebItem : public QDeclarativeItem
 {
     Q_OBJECT
@@ -95,9 +129,11 @@ class WebItem : public QDeclarativeItem
     Q_PROPERTY(int maxScriptKB READ maxScriptKB WRITE setMaxScriptKB NOTIFY filterChanged)
     Q_PROPERTY(bool jsDefault READ jsDefault WRITE setJsDefault NOTIFY filterChanged)
     Q_PROPERTY(int pageStyle READ pageStyle WRITE setPageStyle NOTIFY pageStyleChanged)
+    Q_PROPERTY(bool selecting READ selecting NOTIFY selectingChanged)
 public:
     WebItem(QDeclarativeItem *parent = 0);
     QString url() const;
+    bool selecting() const { return m_view->selecting(); }
     QString title() const;
     int progress() const { return m_progress; }
     bool loading() const { return m_loading; }
@@ -132,6 +168,7 @@ public:
     Q_INVOKABLE QString text(const QString &key, const QString &def) const;
 
 signals:
+    void selectingChanged();
     void urlChanged();
     void titleChanged();
     void progressChanged();
@@ -160,7 +197,7 @@ protected:
 private:
     void applyLayout();
     void saveJs();
-    QGraphicsWebView *m_view;
+    TouchWebView *m_view;
     NetPage *m_page;
     FilterNam *m_nam;
     int m_progress;

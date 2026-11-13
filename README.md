@@ -32,10 +32,10 @@ settings). Translations are welcome: see `qml/strings.js`.
 
 ## Install
 
-Copy `dist/netmee-n9_0.1.5_armel.deb` to the phone (for example to
+Copy `dist/netmee-n9_0.1.6_armel.deb` to the phone (for example to
 `/home/developer/`) and install it as root:
 
-    aegis-dpkg -i /home/developer/netmee-n9_0.1.5_armel.deb
+    aegis-dpkg -i /home/developer/netmee-n9_0.1.6_armel.deb
 
 `aegis-dpkg` comes from CODeRUS' Aegis-install hack (also inside N9 QTweak).
 Start NetMee from its icon.

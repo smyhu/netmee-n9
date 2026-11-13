@@ -144,6 +144,7 @@ Page {
             contentHeight: Math.max(height, web.contentHeight)
             boundsBehavior: Flickable.DragOverBounds
             pressDelay: 0
+            interactive: !web.selecting
             transform: Scale {
                 origin.x: flick.width / 2
                 origin.y: flick.height / 2

@@ -10,6 +10,7 @@
 #include <QtCore/QTextStream>
 #include <QtNetwork/QNetworkRequest>
 #include <QtWebKit/QGraphicsWebView>
+#include <QtGui/QGraphicsSceneMouseEvent>
 #include <QtWebKit/QWebFrame>
 #include <QtWebKit/QWebHistory>
 #include <QtWebKit/QWebSettings>
@@ -178,11 +179,112 @@ QWebPage *NetPage::createWindow(WebWindowType)
 
 // ---------------------------------------------------------------- WebItem
 
+// ---- TouchWebView -------------------------------------------------------
+
+TouchWebView::TouchWebView(QGraphicsItem *parent)
+    : QGraphicsWebView(parent), holdMs(800), m_pending(false), m_selecting(false),
+      m_button(Qt::LeftButton), m_mods(Qt::NoModifier)
+{
+    m_hold.setSingleShot(true);
+    connect(&m_hold, SIGNAL(timeout()), this, SLOT(onHold()));
+}
+
+void TouchWebView::setSelecting(bool b)
+{
+    if (m_selecting == b) return;
+    m_selecting = b;
+    emit selectingChanged();
+}
+
+void TouchWebView::sendPress()
+{
+    QGraphicsSceneMouseEvent p(QEvent::GraphicsSceneMousePress);
+    p.setPos(m_pos);
+    p.setScenePos(m_scenePos);
+    p.setScreenPos(m_screenPos);
+    p.setButtonDownPos(m_button, m_pos);
+    p.setButtonDownScenePos(m_button, m_scenePos);
+    p.setButtonDownScreenPos(m_button, m_screenPos);
+    p.setButton(m_button);
+    p.setButtons(m_button);
+    p.setModifiers(m_mods);
+    QGraphicsWebView::mousePressEvent(&p);
+}
+
+void TouchWebView::mousePressEvent(QGraphicsSceneMouseEvent *e)
+{
+    // Keep the press to ourselves: WebKit would start a text selection on the
+    // first move. The Flickable steals the grab once the finger moves.
+    m_pos = e->pos();
+    m_scenePos = e->scenePos();
+    m_screenPos = e->screenPos();
+    m_button = e->button();
+    m_mods = e->modifiers();
+    m_pending = true;
+    setSelecting(false);
+    m_hold.start(holdMs);
+    e->accept();
+}
+
+void TouchWebView::onHold()
+{
+    if (!m_pending) return;
+    m_pending = false;
+    setSelecting(true);   // QML turns off flicking while selecting
+    sendPress();
+}
+
+void TouchWebView::mouseMoveEvent(QGraphicsSceneMouseEvent *e)
+{
+    if (m_selecting) {
+        QGraphicsWebView::mouseMoveEvent(e);
+        return;
+    }
+    if (m_pending && (e->screenPos() - m_screenPos).manhattanLength() > 12) {
+        m_pending = false;   // a scroll, not a tap
+        m_hold.stop();
+    }
+    e->accept();
+}
+
+void TouchWebView::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
+{
+    m_hold.stop();
+    if (m_selecting) {
+        QGraphicsWebView::mouseReleaseEvent(e);
+        setSelecting(false);
+        return;
+    }
+    if (m_pending) {   // short tap: replay it as a click
+        m_pending = false;
+        sendPress();
+        QGraphicsWebView::mouseReleaseEvent(e);
+    }
+    e->accept();
+}
+
+void TouchWebView::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *e)
+{
+    // Qt sends a double-click instead of the second press: treat it as a press.
+    mousePressEvent(e);
+}
+
+void TouchWebView::ungrabMouseEvent(QEvent *e)
+{
+    // The Flickable took over the gesture.
+    m_hold.stop();
+    m_pending = false;
+    setSelecting(false);
+    QGraphicsWebView::ungrabMouseEvent(e);
+}
+
+// ---- WebItem ------------------------------------------------------------
+
 WebItem::WebItem(QDeclarativeItem *parent)
     : QDeclarativeItem(parent), m_progress(0), m_loading(false), m_vpWidth(320), m_style(0)
 {
     setFlag(QGraphicsItem::ItemHasNoContents, true);
-    m_view = new QGraphicsWebView(this);
+    m_view = new TouchWebView(this);
     m_page = new NetPage(this);
     m_nam = new FilterNam(m_page);
     m_page->setNetworkAccessManager(m_nam);
@@ -210,6 +312,7 @@ WebItem::WebItem(QDeclarativeItem *parent)
     connect(m_page, SIGNAL(loadProgress(int)), this, SLOT(onProgress(int)));
     connect(m_page, SIGNAL(loadFinished(bool)), this, SLOT(onFinished(bool)));
     connect(m_view, SIGNAL(geometryChanged()), this, SLOT(onGeometry()));
+    connect(m_view, SIGNAL(selectingChanged()), this, SIGNAL(selectingChanged()));
     connect(m_view, SIGNAL(urlChanged(QUrl)), this, SLOT(onUrl()));
     connect(m_view, SIGNAL(titleChanged(QString)), this, SIGNAL(titleChanged()));
     connect(m_page, SIGNAL(linkClicked(QUrl)), this, SIGNAL(linkOpened()));

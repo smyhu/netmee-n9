@@ -5,7 +5,7 @@
 set -e
 TC=${TC:-/tmp/claude-0/x/tc}
 D=$(cd "$(dirname "$0")" && pwd)
-VER=${VER:-0.1.5}
+VER=${VER:-0.1.6}
 OUT=${OUT:-$D/build}
 mkdir -p $OUT
 H=$TC/hdr/usr/arm-linux-gnueabihf
