@@ -162,7 +162,7 @@ Page {
                     if (!address.activeFocus) {
                         address.text = page.shortUrl(url);
                     }
-                    web.setText("last", url);
+                    console.log("page " + url);
                 }
                 onLoadingChanged: if (loading) { flick.contentX = 0; flick.contentY = 0; }
                 onLoadFailed: page.showFailure(url)
@@ -249,8 +249,7 @@ Page {
 
     onStatusChanged: if (status == PageStatus.Active) refreshStar()
     Component.onCompleted: {
-        // an address from another app (FeedMee) wins over the last page
-        var start = startUrl != "" ? startUrl : web.text("last", "");
-        web.load(start != "" ? start : homeUrl());
+        // an address from another app (FeedMee) wins over the home page
+        web.load(startUrl != "" ? startUrl : homeUrl());
     }
 }

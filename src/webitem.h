@@ -16,6 +16,8 @@
 #include <QtWebKit/QGraphicsWebView>
 #include <QtCore/QTimer>
 #include <QtCore/QPointF>
+#include <QtCore/QPointer>
+#include <QtGui/QWidget>
 
 // Answers a blocked request at once with an error and no data.
 class BlockedReply : public QNetworkReply
@@ -100,6 +102,7 @@ private slots:
     void onHold();
 private:
     void sendPress();
+    void takeFocus();
     void setSelecting(bool b);
     QTimer m_hold;
     bool m_pending;
@@ -108,6 +111,7 @@ private:
     QPoint m_screenPos;
     Qt::MouseButton m_button;
     Qt::KeyboardModifiers m_mods;
+    QPointer<QWidget> m_widget;
 };
 
 class WebItem : public QDeclarativeItem

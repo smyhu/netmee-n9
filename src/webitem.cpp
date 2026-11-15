@@ -196,8 +196,19 @@ void TouchWebView::setSelecting(bool b)
     emit selectingChanged();
 }
 
+void TouchWebView::takeFocus()
+{
+    // like QtWebKit's own QML WebView: the item is a focus scope and the web
+    // view inside it holds the focus, so keys and the virtual keyboard reach
+    // the page field that was tapped
+    if (parentItem())
+        parentItem()->setFocus(Qt::MouseFocusReason);
+    setFocus(Qt::MouseFocusReason);
+}
+
 void TouchWebView::sendPress()
 {
+    takeFocus();
     QGraphicsSceneMouseEvent p(QEvent::GraphicsSceneMousePress);
     p.setPos(m_pos);
     p.setScenePos(m_scenePos);
@@ -208,6 +219,7 @@ void TouchWebView::sendPress()
     p.setButton(m_button);
     p.setButtons(m_button);
     p.setModifiers(m_mods);
+    p.setWidget(m_widget);   // WebKit asks the widget for the input method
     QGraphicsWebView::mousePressEvent(&p);
 }
 
@@ -220,6 +232,7 @@ void TouchWebView::mousePressEvent(QGraphicsSceneMouseEvent *e)
     m_screenPos = e->screenPos();
     m_button = e->button();
     m_mods = e->modifiers();
+    m_widget = e->widget();
     m_pending = true;
     setSelecting(false);
     m_hold.start(holdMs);
@@ -284,12 +297,14 @@ WebItem::WebItem(QDeclarativeItem *parent)
     : QDeclarativeItem(parent), m_progress(0), m_loading(false), m_vpWidth(320), m_style(0)
 {
     setFlag(QGraphicsItem::ItemHasNoContents, true);
+    setFlag(QGraphicsItem::ItemIsFocusScope, true);
     m_view = new TouchWebView(this);
     m_page = new NetPage(this);
     m_nam = new FilterNam(m_page);
     m_page->setNetworkAccessManager(m_nam);
     m_view->setPage(m_page);
     m_view->setResizesToContents(true);
+    m_view->setFocus();
     QWebSettings *s = m_page->settings();
     s->setAttribute(QWebSettings::PluginsEnabled, false);
     s->setAttribute(QWebSettings::JavascriptCanOpenWindows, false);

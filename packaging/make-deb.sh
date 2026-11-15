@@ -2,7 +2,7 @@
 # make-deb.sh - builds netmee-n9_<VER>_armel.deb from build/netmee-n9 + qml/ + packaging/
 set -e
 D=$(cd "$(dirname "$0")/.." && pwd)
-VER=${VER:-0.1.6}
+VER=${VER:-0.1.7}
 OUTDIR=${OUTDIR:-$D/dist}
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 P=$T/data; mkdir -p $P/opt/netmee-n9/bin $P/opt/netmee-n9/qml $P/usr/share/applications $P/usr/share/icons/hicolor/80x80/apps $P/usr/share/doc/netmee-n9 $P/usr/share/dbus-1/services $T/ctl

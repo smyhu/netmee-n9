@@ -5,7 +5,7 @@
 set -e
 TC=${TC:-/tmp/claude-0/x/tc}
 D=$(cd "$(dirname "$0")" && pwd)
-VER=${VER:-0.1.6}
+VER=${VER:-0.1.7}
 OUT=${OUT:-$D/build}
 mkdir -p $OUT
 H=$TC/hdr/usr/arm-linux-gnueabihf
@@ -16,7 +16,7 @@ QEMU_LD_PREFIX=$TC/rt qemu-arm-static -E LD_LIBRARY_PATH=/usr/lib:/lib $TC/rt/us
 T="--target=arm-linux-gnueabihf -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -mthumb"
 CF="$T -O2 -fno-pic -nostdinc -isystem $(clang -print-resource-dir)/include -isystem $H/include/c++/13 -isystem $H/include/c++/13/arm-linux-gnueabihf -isystem $H/include -U_FORTIFY_SOURCE -D_FILE_OFFSET_BITS=32"
 for f in $D/src/main.cpp $D/src/webitem.cpp $OUT/moc_webitem.cpp $OUT/moc_opener.cpp; do
-  clang++ $CF -std=gnu++98 -fno-rtti -fno-exceptions -fno-threadsafe-statics -DQT_NO_DEBUG -DQT_SHARED -DNETMEE_VERSION=\"$VER\" \
+  clang++ $CF -std=gnu++98 -fno-exceptions -fno-threadsafe-statics -DQT_NO_DEBUG -DQT_SHARED -DNETMEE_VERSION=\"$VER\" \
     -I $Q -I $Q/QtCore -I $Q/QtGui -I $Q/QtNetwork -I $Q/QtDeclarative -I $Q/QtWebKit -I $Q/QtDBus -I $D/src -c $f -o $OUT/$(basename $f .cpp).o
 done
 G=$TC/hdr/usr/lib/gcc-cross/arm-linux-gnueabihf/13

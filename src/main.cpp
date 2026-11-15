@@ -5,6 +5,9 @@
  */
 #include <QtGui/QApplication>
 #include <QtCore/QLocale>
+#include <QtCore/QTime>
+#include <stdio.h>
+#include <stdlib.h>
 #include <QtDeclarative/QDeclarativeView>
 #include <QtDeclarative/QDeclarativeContext>
 #include <QtDeclarative/QDeclarativeEngine>
@@ -12,8 +15,69 @@
 #include <QtNetwork/QNetworkProxy>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusInterface>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <signal.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <execinfo.h>
 #include "webitem.h"
 #include "opener.h"
+
+// Crash diary: ~/.netmee-n9/netmee.log keeps Qt warnings, visited pages and,
+// after a crash, the signal and a raw backtrace. The previous run's log is
+// kept as netmee.log.1, so a crash can be sent in after restarting.
+static char g_log[512];
+
+static void logLine(const char *s, bool always = false)
+{
+    int fd = open(g_log, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if (fd < 0) return;
+    if (!always && lseek(fd, 0, SEEK_END) > 200000) { close(fd); return; }
+    ssize_t r = write(fd, s, strlen(s));
+    r = write(fd, "\n", 1);
+    (void)r;
+    close(fd);
+}
+
+static void onMessage(QtMsgType type, const char *msg)
+{
+    static const char *tag[] = { "D ", "W ", "C ", "F " };
+    QByteArray line = QByteArray(tag[type < 4 ? type : 1]) + QTime::currentTime().toString("hh:mm:ss ").toLatin1() + msg;
+    logLine(line.constData());
+    fprintf(stderr, "%s\n", msg);
+    if (type == QtFatalMsg) abort();
+}
+
+static void onCrash(int sig)
+{
+    char head[64];
+    snprintf(head, sizeof head, "CRASH signal %d", sig);
+    logLine(head, true);
+    void *frames[40];
+    int n = backtrace(frames, 40);
+    int fd = open(g_log, O_WRONLY | O_APPEND);
+    if (fd >= 0) { backtrace_symbols_fd(frames, n, fd); close(fd); }
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void startDiary()
+{
+    QString dir = QDir::homePath() + "/.netmee-n9";
+    QDir().mkpath(dir);
+    QString path = dir + "/netmee.log";
+    QFile::remove(path + ".1");
+    QFile::rename(path, path + ".1");
+    qstrncpy(g_log, QFile::encodeName(path).constData(), sizeof g_log);
+    qInstallMsgHandler(onMessage);
+    signal(SIGSEGV, onCrash);
+    signal(SIGABRT, onCrash);
+    signal(SIGBUS, onCrash);
+    signal(SIGILL, onCrash);
+    signal(SIGFPE, onCrash);
+}
 
 int main(int argc, char **argv)
 {
@@ -60,6 +124,8 @@ int main(int argc, char **argv)
         Opener::note("no session bus");
     }
     Opener::note("started" + (startUrl.isEmpty() ? QString() : " with " + startUrl));
+    startDiary();
+    qDebug("NetMee %s started%s", NETMEE_VERSION, startUrl.isEmpty() ? "" : qPrintable(" with " + startUrl));
     view.rootContext()->setContextProperty("appVersion", QString(NETMEE_VERSION));
     view.rootContext()->setContextProperty("uiLang", lang);
     view.rootContext()->setContextProperty("startUrl", startUrl);
